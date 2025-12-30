@@ -21,6 +21,7 @@ public class PlayerLockOn : MonoBehaviour
 
     private InputSystem_Actions _input;
     private Transform _currentTargetEnemy; // 敵のルートオブジェクト
+    public Transform CurrentTarget => _currentTargetEnemy;
     private Transform _currentTargetAimPoint; // 実際に狙うポイント（AimPoint または Enemy中心）
     private GameObject _currentCursorInstance;
     private bool _canSwitchTarget = true;

@@ -2672,12 +2672,14 @@ MonoBehaviour:
   gravity: -9.81
   dodgeSpeed: 12
   dodgeDuration: 0.3
-  invertDodgeDirection: 0
-  enableBackStep: 0
+  guardMoveSpeed: 2
+  parryWindow: 0.2
+  parryCooldown: 0.5
   attackDuration: 0.6
   cameraTransform: {fileID: 330585546}
   animator: {fileID: 1893974909}
   characterController: {fileID: 1893974903}
+  playerLockOn: {fileID: 1893974908}
 --- !u!143 &1893974903
 CharacterController:
   m_ObjectHideFlags: 0

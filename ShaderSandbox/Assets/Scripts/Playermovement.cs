@@ -28,6 +28,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private CharacterController characterController;
 
+    [SerializeField] private PlayerLockOn playerLockOn;
+
     private InputSystem_Actions _input;
     private Vector2 _moveInput;
     private bool _isRunning;
@@ -89,40 +91,82 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleMovement()
     {
+        // 1. 入力から移動ベクトルを計算（カメラ基準）
         Vector3 moveDir = Vector3.zero;
-
         if (_moveInput.sqrMagnitude > 0.01f)
         {
             Vector3 cameraForward = cameraTransform.forward;
             Vector3 cameraRight = cameraTransform.right;
-            cameraForward.y = 0;
-            cameraRight.y = 0;
-            cameraForward.Normalize();
-            cameraRight.Normalize();
-
+            cameraForward.y = 0; cameraRight.y = 0;
+            cameraForward.Normalize(); cameraRight.Normalize();
             moveDir = cameraForward * _moveInput.y + cameraRight * _moveInput.x;
         }
 
+        // 2. 移動速度の決定（ガード中やダッシュ中の補正）
+        float targetSpeed = _isGuarding ? guardMoveSpeed : (_isRunning ? runSpeed : walkSpeed);
+
+        // 3. 移動実行
         if (moveDir != Vector3.zero)
         {
-            // ▼ 変更: ガード中は速度を変える
-            float targetSpeed;
-            if (_isGuarding) targetSpeed = guardMoveSpeed; // ガード歩き
-            else targetSpeed = _isRunning ? runSpeed : walkSpeed;
-
             characterController.Move(moveDir * targetSpeed * Time.deltaTime);
+        }
 
-            // ガード中は常に向きを変えるか、固定するかはお好みで
-            // ここでは「移動方向に向く」ままにします（ロックオン機能があるならロックオン対象に向くのがベスト）
-            Quaternion targetRotation = Quaternion.LookRotation(moveDir);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        // ★★★ 4. 回転とアニメーションの分岐（ここを変更！） ★★★
+        
+        // 「ロックオン中」かどうかをチェック
+        bool isLockedOn = (playerLockOn != null && playerLockOn.CurrentTarget != null);
 
-            if (animator != null) animator.SetFloat("Speed", targetSpeed);
+    // 条件変更: 「ロックオン中」または「ガード中」なら、ストレイフ挙動にする
+    if (isLockedOn || _isGuarding) 
+    {
+        // 【A. 体の向き】
+        Vector3 targetDir;
+        if (isLockedOn)
+        {
+            // ロックオン中 → 敵の方を向く
+            targetDir = playerLockOn.CurrentTarget.position - transform.position;
         }
         else
         {
-            if (animator != null) animator.SetFloat("Speed", 0);
+            // ガード中（敵なし） → カメラの正面を向く
+            targetDir = cameraTransform.forward;
         }
+
+        targetDir.y = 0; // 上下は無視
+        if (targetDir != Vector3.zero)
+        {
+            Quaternion lookRot = Quaternion.LookRotation(targetDir);
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, rotationSpeed * Time.deltaTime);
+        }
+
+        // 【B. アニメーション】
+        // XとYをそのまま渡して「方向別移動」させる
+        if (animator != null)
+        {
+            animator.SetFloat("InputX", _moveInput.x, 0.1f, Time.deltaTime);
+            animator.SetFloat("InputY", _moveInput.y, 0.1f, Time.deltaTime);
+
+            animator.SetFloat("Speed", _moveInput.magnitude);
+        }
+    }
+    else // 【通常時：自由移動】
+    {
+        // ... (以前のまま：移動方向に回転＆InputYのみ使用) ...
+        if (moveDir != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(moveDir);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
+
+        if (animator != null)
+        {
+            animator.SetFloat("InputX", 0f, 0.1f, Time.deltaTime);
+            
+            float forwardAmount = _moveInput.magnitude; 
+            if (_isRunning) forwardAmount *= 2f; 
+            animator.SetFloat("InputY", forwardAmount, 0.1f, Time.deltaTime);
+        }
+    }
     }
 
     private void ApplyGravity()
@@ -165,7 +209,8 @@ public class PlayerMovement : MonoBehaviour
         _isAttacking = true;
         if (animator != null) 
         {
-            animator.SetFloat("Speed", 0);
+            animator.SetFloat("InputX", 0);
+            animator.SetFloat("InputY", 0);
             animator.SetTrigger("Attack");
         }
         yield return new WaitForSeconds(attackDuration);
@@ -231,6 +276,10 @@ public class PlayerMovement : MonoBehaviour
         }
 
         _isDodging = false;
-        if (animator != null) animator.SetFloat("Speed", 0f);
+        if (animator != null) 
+        {
+            animator.SetFloat("InputX", 0);
+            animator.SetFloat("InputY", 0);
+        }
     }
 }
