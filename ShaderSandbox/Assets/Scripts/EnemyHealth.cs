@@ -32,7 +32,7 @@ public class EnemyHealth : MonoBehaviour
         // 全てのパーツを赤くする
         foreach (var rend in _renderers)
         {
-            rend.material.color = Color.red;
+            rend.material.color = Color.white;
         }
         
         // 時間差で戻す予約
