@@ -1543,8 +1543,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 0
   serializedVersion: 3
-  m_Size: {x: 1.282511, y: 0.19910012, z: 0.11429276}
-  m_Center: {x: -0.5974189, y: -0.0041349456, z: -0.019661034}
+  m_Size: {x: 1.8098085, y: 1.1430622, z: 0.3836248}
+  m_Center: {x: -0.4280262, y: -0.16332392, z: -0.15432662}
 --- !u!114 &973873943
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1657,7 +1657,7 @@ MonoBehaviour:
   TargetOffset: {x: 0, y: 0, z: 0}
   TrackerSettings:
     BindingMode: 4
-    PositionDamping: {x: 1, y: 1, z: 1}
+    PositionDamping: {x: 0.5, y: 0.5, z: 0.5}
     AngularDampingMode: 0
     RotationDamping: {x: 1, y: 1, z: 1}
     QuaternionDamping: 1
@@ -1756,7 +1756,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1079358282}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.1521234, y: 0, z: 0, w: 0.98836154}
+  m_LocalRotation: {x: 0.15212336, y: -0.0000000041103094, z: 6.3263694e-10, w: 0.98836154}
   m_LocalPosition: {x: 0, y: 1.5035291, z: -4.7685847}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2267,6 +2267,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1731461154
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1731461155}
+  m_Layer: 0
+  m_Name: CameraMidpoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1731461155
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1731461154}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1826376955
 GameObject:
   m_ObjectHideFlags: 0
@@ -2680,6 +2711,12 @@ MonoBehaviour:
   animator: {fileID: 1893974909}
   characterController: {fileID: 1893974903}
   playerLockOn: {fileID: 1893974908}
+  skillCooldown: 3
+  skillDuration: 2
+  homingRange: 2
+  attackRotationSpeed: 20
+  attackStepDistance: 2
+  attackStepDuration: 0.2
 --- !u!143 &1893974903
 CharacterController:
   m_ObjectHideFlags: 0
@@ -2757,6 +2794,8 @@ MonoBehaviour:
   defaultOffset: {x: 0, y: 1.2, z: 0.5}
   freeLookCamera: {fileID: 1826376958}
   lockOnCamera: {fileID: 1079358287}
+  midpointObject: {fileID: 1731461155}
+  heightOffset: 1
 --- !u!95 &1893974909 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 9500000, guid: a96824dc2856a904f9c865f81199c0fe, type: 3}
@@ -2777,3 +2816,4 @@ SceneRoots:
   - {fileID: 35299843}
   - {fileID: 304321318}
   - {fileID: 1716744103}
+  - {fileID: 1731461155}

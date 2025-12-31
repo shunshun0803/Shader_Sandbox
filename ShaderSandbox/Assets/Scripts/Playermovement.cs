@@ -30,6 +30,19 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField] private PlayerLockOn playerLockOn;
 
+    [Header("Skill Settings")]
+    [SerializeField] private float skillCooldown = 3.0f; // 3秒に1回使える
+    [SerializeField] private float skillDuration = 2.0f; // スキルモーションの長さ（硬直時間）
+
+    [Header("Attack Homing Settings")]
+    [SerializeField] private float homingRange = 2.0f;
+    [SerializeField] private float attackRotationSpeed = 20f; // 攻撃時の回転速度（速め推奨）
+    [SerializeField] private float attackStepDistance = 2.0f; // 攻撃時に踏み込む距離
+    [SerializeField] private float attackStepDuration = 0.2f; // 踏み込みにかける時間（出始めの一瞬）
+
+    private float _lastSkillTime = -999f; // 最後にスキルを使った時間
+    private bool _isUsingSkill = false;   // スキル中フラグ
+
     private InputSystem_Actions _input;
     private Vector2 _moveInput;
     private bool _isRunning;
@@ -39,6 +52,8 @@ public class PlayerMovement : MonoBehaviour
     private bool _isParrying = false;
     public bool IsGuarding => _isGuarding;
     public bool IsParrying => _isParrying;
+    private bool _isParryActive = false; // パリィの成功判定が出ているか
+    public bool IsParryActive => _isParryActive; // 敵の攻撃スクリプトから参照する用
     private Vector3 _velocity;
 
     private void Awake()
@@ -56,6 +71,11 @@ public class PlayerMovement : MonoBehaviour
 
         _input.Player.Guard.performed += ctx => SetGuard(true);
         _input.Player.Guard.canceled += ctx => SetGuard(false);
+
+        if (_input.Player.Skill != null) // 安全対策
+        {
+            _input.Player.Skill.performed += ctx => OnSkill();
+        }
     }
 
     private void OnEnable() => _input.Enable();
@@ -66,12 +86,12 @@ public class PlayerMovement : MonoBehaviour
         // ▼ カーソルを非表示にし、画面中央にロック（固定）する
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        
+
     }
 
     private void Update()
     {
-        if (_isDodging || _isAttacking || _isParrying) 
+        if (_isDodging || _isAttacking || _isParrying || _isUsingSkill)
         {
             ApplyGravity();
             return;
@@ -81,9 +101,8 @@ public class PlayerMovement : MonoBehaviour
         ApplyGravity();
     }
     private void SetGuard(bool state)
-    {
-        // 攻撃中や回避中はガードできない（キャンセルさせたい場合は条件を調整）
-        if (_isDodging || _isAttacking || _isParrying) return;
+    {// ガードを開始（trueにする）するときだけ制限をかける
+        if (state && (_isDodging || _isAttacking || _isParrying || _isUsingSkill)) return;
 
         _isGuarding = state;
         if (animator != null) animator.SetBool("Guard", _isGuarding);
@@ -112,61 +131,61 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // ★★★ 4. 回転とアニメーションの分岐（ここを変更！） ★★★
-        
+
         // 「ロックオン中」かどうかをチェック
         bool isLockedOn = (playerLockOn != null && playerLockOn.CurrentTarget != null);
 
-    // 条件変更: 「ロックオン中」または「ガード中」なら、ストレイフ挙動にする
-    if (isLockedOn || _isGuarding) 
-    {
-        // 【A. 体の向き】
-        Vector3 targetDir;
-        if (isLockedOn)
+        // 条件変更: 「ロックオン中」または「ガード中」なら、ストレイフ挙動にする
+        if (isLockedOn || _isGuarding)
         {
-            // ロックオン中 → 敵の方を向く
-            targetDir = playerLockOn.CurrentTarget.position - transform.position;
-        }
-        else
-        {
-            // ガード中（敵なし） → カメラの正面を向く
-            targetDir = cameraTransform.forward;
-        }
+            // 【A. 体の向き】
+            Vector3 targetDir;
+            if (isLockedOn)
+            {
+                // ロックオン中 → 敵の方を向く
+                targetDir = playerLockOn.CurrentTarget.position - transform.position;
+            }
+            else
+            {
+                // ガード中（敵なし） → カメラの正面を向く
+                targetDir = cameraTransform.forward;
+            }
 
-        targetDir.y = 0; // 上下は無視
-        if (targetDir != Vector3.zero)
-        {
-            Quaternion lookRot = Quaternion.LookRotation(targetDir);
-            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, rotationSpeed * Time.deltaTime);
-        }
+            targetDir.y = 0; // 上下は無視
+            if (targetDir != Vector3.zero)
+            {
+                Quaternion lookRot = Quaternion.LookRotation(targetDir);
+                transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, rotationSpeed * Time.deltaTime);
+            }
 
-        // 【B. アニメーション】
-        // XとYをそのまま渡して「方向別移動」させる
-        if (animator != null)
-        {
-            animator.SetFloat("InputX", _moveInput.x, 0.1f, Time.deltaTime);
-            animator.SetFloat("InputY", _moveInput.y, 0.1f, Time.deltaTime);
+            // 【B. アニメーション】
+            // XとYをそのまま渡して「方向別移動」させる
+            if (animator != null)
+            {
+                animator.SetFloat("InputX", _moveInput.x, 0.1f, Time.deltaTime);
+                animator.SetFloat("InputY", _moveInput.y, 0.1f, Time.deltaTime);
 
-            animator.SetFloat("Speed", _moveInput.magnitude);
+                animator.SetFloat("Speed", _moveInput.magnitude);
+            }
         }
-    }
-    else // 【通常時：自由移動】
-    {
-        // ... (以前のまま：移動方向に回転＆InputYのみ使用) ...
-        if (moveDir != Vector3.zero)
+        else // 【通常時：自由移動】
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDir);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-        }
+            // ... (以前のまま：移動方向に回転＆InputYのみ使用) ...
+            if (moveDir != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(moveDir);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            }
 
-        if (animator != null)
-        {
-            animator.SetFloat("InputX", 0f, 0.1f, Time.deltaTime);
-            
-            float forwardAmount = _moveInput.magnitude; 
-            if (_isRunning) forwardAmount *= 2f; 
-            animator.SetFloat("InputY", forwardAmount, 0.1f, Time.deltaTime);
+            if (animator != null)
+            {
+                animator.SetFloat("InputX", 0f, 0.1f, Time.deltaTime);
+
+                float forwardAmount = _moveInput.magnitude;
+                if (_isRunning) forwardAmount *= 2f;
+                animator.SetFloat("InputY", forwardAmount, 0.1f, Time.deltaTime);
+            }
         }
-    }
     }
 
     private void ApplyGravity()
@@ -193,27 +212,147 @@ public class PlayerMovement : MonoBehaviour
             StartCoroutine(AttackRoutine());
         }
     }
+    private void OnSkill()
+    {
+        // 1. 他のアクション中は禁止
+        if (_isDodging || _isAttacking || _isParrying || _isUsingSkill) return;
+        if (_isGuarding) SetGuard(false);
+        // 2. クールダウンチェック
+        // 「現在の時間」が「最後に撃った時間 + 待ち時間」より小さければ、まだ使えない
+        if (Time.time < _lastSkillTime + skillCooldown)
+        {
+            Debug.Log("スキル準備中... 残り: " + ((_lastSkillTime + skillCooldown) - Time.time) + "秒");
+            return;
+        }
+
+        // 3. 発動！
+        StartCoroutine(SkillRoutine());
+    }
+    private IEnumerator SkillRoutine()
+    {
+        _isUsingSkill = true;
+        _lastSkillTime = Time.time;
+
+        Transform target = playerLockOn != null ? playerLockOn.CurrentTarget : null;
+
+        if (animator != null)
+        {
+            animator.SetFloat("InputX", 0);
+            animator.SetFloat("InputY", 0);
+            animator.SetFloat("Speed", 0);
+            animator.SetTrigger("Skill");
+        }
+
+        // ★ スキル用ホーミング（攻撃と同じロジック） ★
+        float timer = 0;
+        // スキルの踏み込み時間は skillDuration に合わせて調整してください
+        float skillStepTime = 0.3f;
+
+        while (timer < skillStepTime)
+        {
+            if (target != null)
+            {
+                float distance = Vector3.Distance(transform.position, target.position);
+
+                if (distance <= homingRange)
+                {
+                    // 回転（必殺技なので少し速めに設定）
+                    Vector3 targetDir = (target.position - transform.position);
+                    targetDir.y = 0;
+                    if (targetDir != Vector3.zero)
+                    {
+                        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(targetDir), (attackRotationSpeed * 1.5f) * Time.deltaTime);
+                    }
+
+                    // 踏み込み
+                    if (distance > 1.2f)
+                    {
+                        characterController.Move(transform.forward * (attackStepDistance / skillStepTime) * Time.deltaTime);
+                    }
+                }
+            }
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(Mathf.Max(0, skillDuration - skillStepTime));
+        _isUsingSkill = false;
+    }
     private IEnumerator ParryRoutine()
     {
-        _isParrying = true;
+        _isParrying = true;      // 【移動制限開始】
+        _isParryActive = true;   // 【パリィ成功判定開始】
 
-        if (animator != null) animator.SetTrigger("Parry");
+        if (animator != null)
+        {
+            animator.SetFloat("InputX", 0);
+            animator.SetFloat("InputY", 0);
+            animator.SetTrigger("Parry");
+        }
 
+        // 1. パリィが成功する「受付時間」だけ待つ
         yield return new WaitForSeconds(parryWindow);
-        _isParrying = false;
-        yield return new WaitForSeconds(parryCooldown - parryWindow);
+
+        // 2. 受付時間は終了（これ以降に攻撃を食らったらダメージを受ける）
+        _isParryActive = false;
+
+        // 3. 残りの「硬直（隙）」が終わるまで待つ
+        // 全体のクールダウンから受付時間を引いた残り時間
+        float recoveryTime = parryCooldown - parryWindow;
+        if (recoveryTime > 0)
+        {
+            yield return new WaitForSeconds(recoveryTime);
+        }
+
+        _isParrying = false;     // 【移動制限解除】
     }
 
     private IEnumerator AttackRoutine()
     {
         _isAttacking = true;
-        if (animator != null) 
+
+        Transform target = playerLockOn != null ? playerLockOn.CurrentTarget : null;
+
+        if (animator != null)
         {
             animator.SetFloat("InputX", 0);
             animator.SetFloat("InputY", 0);
             animator.SetTrigger("Attack");
         }
-        yield return new WaitForSeconds(attackDuration);
+
+        // ★ 至近距離ホーミング開始 ★
+        float timer = 0;
+        while (timer < attackStepDuration)
+        {
+            if (target != null)
+            {
+                float distance = Vector3.Distance(transform.position, target.position);
+
+                // 至近距離（homingRange以内）の時だけ吸い付く
+                if (distance <= homingRange)
+                {
+                    // 1. 向きを合わせる
+                    Vector3 targetDir = (target.position - transform.position);
+                    targetDir.y = 0;
+                    if (targetDir != Vector3.zero)
+                    {
+                        Quaternion targetRotation = Quaternion.LookRotation(targetDir);
+                        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, attackRotationSpeed * Time.deltaTime);
+                    }
+
+                    // 2. 踏み込む（密着しすぎないよう1.2m以上の時だけ移動）
+                    if (distance > 1.2f)
+                    {
+                        Vector3 moveStep = transform.forward * (attackStepDistance / attackStepDuration) * Time.deltaTime;
+                        characterController.Move(moveStep);
+                    }
+                }
+            }
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(Mathf.Max(0, attackDuration - attackStepDuration));
         _isAttacking = false;
     }
 
@@ -223,49 +362,64 @@ public class PlayerMovement : MonoBehaviour
         // ガード中でも回避はできるようにする（キャンセル行動）
         // ただしガード状態は一時解除したほうが自然
         if (_isDodging || _isAttacking) return;
-        
+
         if (_isGuarding) SetGuard(false); // 回避したらガード解除
 
         StartCoroutine(DodgeRoutine());
     }
 
+    // 修正版 DodgeRoutine
     private IEnumerator DodgeRoutine()
     {
         _isDodging = true;
-        if (animator != null) animator.SetTrigger("Dodge");
 
-        // 1. 回避方向の計算
-        Vector3 dodgeDir = Vector3.zero;
+        // 「ロックオン中」または「ガード中」かを判定
+        bool isStrafeMode = (playerLockOn != null && playerLockOn.CurrentTarget != null) || _isGuarding;
 
-        // 入力のスナップショットをとる（連打対策）
-        Vector2 currentInput = _moveInput;
+        // 1. 入力のスナップショット
+        Vector2 snapInput = _moveInput;
+        if (snapInput.sqrMagnitude < 0.01f) snapInput = new Vector2(0, 1);
+        snapInput.Normalize();
 
-        if (currentInput.sqrMagnitude > 0.01f)
+        // 2. アニメーションへの適用
+        if (animator != null)
         {
-            // 入力がある場合：カメラ基準で方向を決める
+            animator.SetFloat("InputX", snapInput.x);
+            animator.SetFloat("InputY", snapInput.y);
+            animator.SetTrigger("Dodge");
+        }
+
+        // 3. 回避方向の計算
+        Vector3 dodgeDir = Vector3.zero;
+        if (_moveInput.sqrMagnitude > 0.01f)
+        {
             Vector3 cameraForward = cameraTransform.forward;
             Vector3 cameraRight = cameraTransform.right;
-            cameraForward.y = 0;
-            cameraRight.y = 0;
-            cameraForward.Normalize();
-            cameraRight.Normalize();
-
-            dodgeDir = (cameraForward * currentInput.y + cameraRight * currentInput.x).normalized;
+            cameraForward.y = 0; cameraRight.y = 0;
+            cameraForward.Normalize(); cameraRight.Normalize();
+            dodgeDir = (cameraForward * snapInput.y + cameraRight * snapInput.x).normalized;
         }
         else
         {
-                // バックステップ無効なら「今向いている方向（前）」へ転がる
-                // これなら連打しても前後せず、常に前に進む
-                dodgeDir = transform.forward;
+            dodgeDir = transform.forward;
         }
 
-        // 2. 向きを変える
-        if (dodgeDir != Vector3.zero)
+        // ★★★ 4. 向きの制御（ここを修正！） ★★★
+        if (isStrafeMode)
         {
-            transform.forward = dodgeDir;
+            // ストレイフモード中（ロックオン・ガード中）は、
+            // 「回避方向に回転させない」ことで、敵を向いたままの「ステップ」になる
+        }
+        else
+        {
+            // 通常時は、回避する方向（dodgeDir）を向く
+            if (dodgeDir != Vector3.zero)
+            {
+                transform.forward = dodgeDir;
+            }
         }
 
-        // 3. 移動実行
+        // 5. 移動実行
         float timer = 0;
         while (timer < dodgeDuration)
         {
@@ -276,10 +430,5 @@ public class PlayerMovement : MonoBehaviour
         }
 
         _isDodging = false;
-        if (animator != null) 
-        {
-            animator.SetFloat("InputX", 0);
-            animator.SetFloat("InputY", 0);
-        }
     }
 }

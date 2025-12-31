@@ -19,6 +19,10 @@ public class PlayerLockOn : MonoBehaviour
     [SerializeField] private CinemachineCamera freeLookCamera;
     [SerializeField] private CinemachineCamera lockOnCamera;
 
+    [Header("Midpoint Settings")]
+    [SerializeField] private Transform midpointObject; // STEP 1で作ったものを入れる
+    [SerializeField] private float heightOffset = 1.2f; // 目線の高さ調整
+
     private InputSystem_Actions _input;
     private Transform _currentTargetEnemy; // 敵のルートオブジェクト
     public Transform CurrentTarget => _currentTargetEnemy;
@@ -48,6 +52,7 @@ public class PlayerLockOn : MonoBehaviour
         {
             HandleTargetSwitching();
             UpdateCursorPosition();
+            UpdateMidpoint();
         }
     }
     private void HandleTargetSwitching()
@@ -125,53 +130,44 @@ public class PlayerLockOn : MonoBehaviour
     private void LockOn(Transform targetEnemy)
     {
         if (_currentCursorInstance != null) Destroy(_currentCursorInstance);
-
         _currentTargetEnemy = targetEnemy;
 
-        // ▼ 追加: 敵が専用の狙い点を持っているかチェック
+        // 狙い点の判定
         var targetPointComponent = targetEnemy.GetComponent<LockOnTargetPoint>();
-        if (targetPointComponent != null && targetPointComponent.aimTransform != null)
-        {
-            // 持っていればそれを使う
-            _currentTargetAimPoint = targetPointComponent.aimTransform;
-        }
-        else
-        {
-            // 持っていなければ敵のルートを使う（後でオフセットを足す）
-            _currentTargetAimPoint = targetEnemy;
-        }
+        _currentTargetAimPoint = (targetPointComponent != null && targetPointComponent.aimTransform != null)
+            ? targetPointComponent.aimTransform : targetEnemy;
 
-
-        // カメラ設定（AimPointを見るようにする）
-        if (lockOnCamera != null)
+        // ▼ Cinemachine v3 (Unity 6) 正しいスクリプト記述
+        if (lockOnCamera != null && midpointObject != null)
         {
-            lockOnCamera.LookAt = _currentTargetAimPoint;
+            // 位置(Follow)はプレイヤーを追い、回転(LookAt)は中間地点を見る
+            // これを代入した瞬間、インスペクターの「Tracking Target」表記は消え、
+            // 「Follow」と「LookAt」の2つの項目に分かれて表示されるようになります
+            lockOnCamera.Follow = this.transform;
+            lockOnCamera.LookAt = midpointObject;
+
             lockOnCamera.Priority = 20;
         }
 
-        if (cursorPrefab != null)
-        {
-            _currentCursorInstance = Instantiate(cursorPrefab);
-        }
+        if (cursorPrefab != null) _currentCursorInstance = Instantiate(cursorPrefab);
     }
 
+    // --- Unlock メソッド ---
     private void Unlock()
     {
         _currentTargetEnemy = null;
-        _currentTargetAimPoint = null; // リセット
+        _currentTargetAimPoint = null;
 
         if (lockOnCamera != null)
         {
+            // ターゲットをリセット
+            lockOnCamera.Follow = null;
             lockOnCamera.LookAt = null;
             lockOnCamera.Priority = 0;
         }
 
-        if (_currentCursorInstance != null)
-        {
-            Destroy(_currentCursorInstance);
-        }
+        if (_currentCursorInstance != null) Destroy(_currentCursorInstance);
     }
-
     private void UpdateCursorPosition()
     {
         // ターゲットかAimPointが何らかの理由で消えたらロック解除
@@ -200,7 +196,7 @@ public class PlayerLockOn : MonoBehaviour
 
             // カーソル位置適用
             _currentCursorInstance.transform.position = finalPos;
-            
+
             // カメラに向ける
             if (Camera.main != null)
             {
@@ -208,10 +204,28 @@ public class PlayerLockOn : MonoBehaviour
             }
         }
     }
-    
+
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, searchRadius);
+    }
+
+    private void UpdateMidpoint()
+    {
+        if (midpointObject == null || _currentTargetEnemy == null) return;
+
+        // 1. プレイヤーと敵の座標を取得
+        Vector3 playerPos = transform.position;
+        Vector3 enemyPos = _currentTargetAimPoint.position;
+
+        // 2. 中間地点を計算: (A + B) / 2
+        Vector3 midPos = (playerPos + enemyPos) / 2f;
+
+        // 3. 高さを少し上げる（地面を見すぎないように）
+        midPos.y += heightOffset;
+
+        // 4. オブジェクトを移動
+        midpointObject.position = midPos;
     }
 }
