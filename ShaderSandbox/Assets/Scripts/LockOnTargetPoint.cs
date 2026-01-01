@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class LockOnTargetPoint : MonoBehaviour
 {
-    // ここに「狙ってほしい場所（空のオブジェクト）」をセットする
     public Transform aimTransform;
 
     // エディタ上で場所をわかりやすくするためのギズモ表示

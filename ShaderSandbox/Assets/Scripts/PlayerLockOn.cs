@@ -20,17 +20,16 @@ public class PlayerLockOn : MonoBehaviour
     [SerializeField] private CinemachineCamera lockOnCamera;
 
     [Header("Midpoint Settings")]
-    [SerializeField] private Transform midpointObject; // STEP 1で作ったものを入れる
-    [SerializeField] private float heightOffset = 1.2f; // 目線の高さ調整
+    [SerializeField] private Transform midpointObject;
+    [SerializeField] private float heightOffset = 1.2f;
 
     private InputSystem_Actions _input;
-    private Transform _currentTargetEnemy; // 敵のルートオブジェクト
+    private Transform _currentTargetEnemy;
     public Transform CurrentTarget => _currentTargetEnemy;
-    private Transform _currentTargetAimPoint; // 実際に狙うポイント（AimPoint または Enemy中心）
+    private Transform _currentTargetAimPoint;
     private GameObject _currentCursorInstance;
     private bool _canSwitchTarget = true;
 
-    // ... (Awake, OnEnable, OnDisable, Update, HandleTargetSwitching は変更なし) ...
     private void Awake()
     {
         _input = new InputSystem_Actions();
@@ -72,8 +71,6 @@ public class PlayerLockOn : MonoBehaviour
         }
     }
 
-    // --- 変更点ここから ---
-
     private void SwitchTarget(float directionX)
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, searchRadius, enemyLayer);
@@ -85,7 +82,7 @@ public class PlayerLockOn : MonoBehaviour
         foreach (var hit in hits)
         {
             if (hit.transform == _currentTargetEnemy) continue;
-            if (hit.transform == transform) continue;
+            if (hit.transform.IsChildOf(transform)) continue;
 
             float distance = Vector3.Distance(transform.position, hit.transform.position);
             if (distance < closestDistance)
@@ -115,7 +112,7 @@ public class PlayerLockOn : MonoBehaviour
 
         foreach (var hit in hits)
         {
-            if (hit.transform == transform) continue;
+            if (hit.transform.IsChildOf(transform)) continue;
             float distance = Vector3.Distance(transform.position, hit.transform.position);
             if (distance < closestDistance)
             {

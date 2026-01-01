@@ -208,6 +208,33 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Stance1"",
+                    ""type"": ""Button"",
+                    ""id"": ""192233b0-6e04-4f03-9d99-cf24efad8241"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Stance2"",
+                    ""type"": ""Button"",
+                    ""id"": ""c62f1919-ee14-4545-a08c-34abd082ebf2"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Stance3"",
+                    ""type"": ""Button"",
+                    ""id"": ""e01141c0-e027-4e7e-a1eb-39489be6548b"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -637,6 +664,39 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Skill"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""995e7632-774e-47e2-95ba-f21ef40b8c22"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Stance1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6290d5db-6319-4d2a-936e-fc542236a83f"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Stance2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b00b1f9a-a78d-460a-bbb6-7799066e3a69"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Stance3"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1237,6 +1297,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_Dodge = m_Player.FindAction("Dodge", throwIfNotFound: true);
         m_Player_Guard = m_Player.FindAction("Guard", throwIfNotFound: true);
         m_Player_Skill = m_Player.FindAction("Skill", throwIfNotFound: true);
+        m_Player_Stance1 = m_Player.FindAction("Stance1", throwIfNotFound: true);
+        m_Player_Stance2 = m_Player.FindAction("Stance2", throwIfNotFound: true);
+        m_Player_Stance3 = m_Player.FindAction("Stance3", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1343,6 +1406,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Dodge;
     private readonly InputAction m_Player_Guard;
     private readonly InputAction m_Player_Skill;
+    private readonly InputAction m_Player_Stance1;
+    private readonly InputAction m_Player_Stance2;
+    private readonly InputAction m_Player_Stance3;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -1406,6 +1472,18 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/Skill".
         /// </summary>
         public InputAction @Skill => m_Wrapper.m_Player_Skill;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Stance1".
+        /// </summary>
+        public InputAction @Stance1 => m_Wrapper.m_Player_Stance1;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Stance2".
+        /// </summary>
+        public InputAction @Stance2 => m_Wrapper.m_Player_Stance2;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Stance3".
+        /// </summary>
+        public InputAction @Stance3 => m_Wrapper.m_Player_Stance3;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1471,6 +1549,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Skill.started += instance.OnSkill;
             @Skill.performed += instance.OnSkill;
             @Skill.canceled += instance.OnSkill;
+            @Stance1.started += instance.OnStance1;
+            @Stance1.performed += instance.OnStance1;
+            @Stance1.canceled += instance.OnStance1;
+            @Stance2.started += instance.OnStance2;
+            @Stance2.performed += instance.OnStance2;
+            @Stance2.canceled += instance.OnStance2;
+            @Stance3.started += instance.OnStance3;
+            @Stance3.performed += instance.OnStance3;
+            @Stance3.canceled += instance.OnStance3;
         }
 
         /// <summary>
@@ -1521,6 +1608,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Skill.started -= instance.OnSkill;
             @Skill.performed -= instance.OnSkill;
             @Skill.canceled -= instance.OnSkill;
+            @Stance1.started -= instance.OnStance1;
+            @Stance1.performed -= instance.OnStance1;
+            @Stance1.canceled -= instance.OnStance1;
+            @Stance2.started -= instance.OnStance2;
+            @Stance2.performed -= instance.OnStance2;
+            @Stance2.canceled -= instance.OnStance2;
+            @Stance3.started -= instance.OnStance3;
+            @Stance3.performed -= instance.OnStance3;
+            @Stance3.canceled -= instance.OnStance3;
         }
 
         /// <summary>
@@ -1912,6 +2008,27 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSkill(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Stance1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnStance1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Stance2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnStance2(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Stance3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnStance3(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

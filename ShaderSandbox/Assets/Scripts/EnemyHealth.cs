@@ -34,7 +34,7 @@ public class EnemyHealth : MonoBehaviour
         {
             rend.material.color = Color.white;
         }
-        
+
         // 時間差で戻す予約
         Invoke("ResetColor", 0.2f);
     }
