@@ -31,22 +31,37 @@ public class EnemyAI : MonoBehaviour
     {
         if (_player == null) return;
 
+        if (_isAttacking)
+        {
+            _agent.isStopped = true;
+            return;
+        }
+
         float distance = Vector3.Distance(transform.position, _player.position);
 
-        // 1. 索敵範囲内にプレイヤーがいれば目的地を更新
+        if (_isAttacking)
+        {
+            // 攻撃アニメーションの「振り下ろす前（予備動作中）」だけ
+            // 緩やかにプレイヤーの方を向き続ける処理
+            SmoothLookAtPlayer(10f); // 10f は回転速度。お好みで調整
+            return;
+        }
+
         if (distance <= _agent.stoppingDistance && Time.time >= _nextAttackTime)
         {
             StartCoroutine(PerformAttack());
         }
+
         else if (distance <= detectionRange)
         {
-            _agent.isStopped = false; // 動く
+            _agent.isStopped = false;
             _agent.SetDestination(_player.position);
         }
         else
         {
             _agent.isStopped = true;
         }
+
         float currentSpeed = _agent.velocity.magnitude;
         _animator.SetFloat("Speed", currentSpeed);
 
@@ -72,8 +87,12 @@ public class EnemyAI : MonoBehaviour
         _agent.isStopped = true; // 攻撃中は足を止める
         _agent.velocity = Vector3.zero;
 
-        // プレイヤーの方向を向かせる
-        LookAtPlayer();
+        Vector3 direction = (_player.position - transform.position).normalized;
+        direction.y = 0;
+        if (direction != Vector3.zero)
+        {
+            transform.rotation = Quaternion.LookRotation(direction);
+        }
 
         // 攻撃アニメーション再生
         _animator.SetTrigger("Attack");
@@ -85,5 +104,16 @@ public class EnemyAI : MonoBehaviour
         yield return new WaitForSeconds(5f);
 
         _isAttacking = false;
+    }
+    private void SmoothLookAtPlayer(float speed)
+    {
+        Vector3 direction = (_player.position - transform.position).normalized;
+        direction.y = 0;
+        if (direction != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            // Slerp を使って滑らかに補間
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * speed);
+        }
     }
 }
