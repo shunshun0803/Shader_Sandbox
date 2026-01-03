@@ -16,6 +16,7 @@ public class EnemyAI : MonoBehaviour
     public float attackCooldown = 2.0f; // 次の攻撃までの待ち時間
     private float _nextAttackTime = 0f;
     private bool _isAttacking = false;
+    private bool _isDead = false;
 
     void Start()
     {
@@ -29,6 +30,7 @@ public class EnemyAI : MonoBehaviour
 
     void Update()
     {
+        if (_isDead) return;
         if (_player == null) return;
 
         if (_isAttacking)
@@ -116,4 +118,61 @@ public class EnemyAI : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * speed);
         }
     }
+    public void OnTakeDamage(int damage) // 引数を受け取るように変更
+    {
+        _isAttacking = false;
+        StopAllCoroutines();
+
+        _agent.isStopped = true;
+        _agent.velocity = Vector3.zero;
+
+        _animator.SetTrigger("GetHit");
+
+        // ダメージ量に応じてノックバックの強さを変える
+        // 例：ダメージの 1/10 を強さにする（調整してください）
+        float knockbackStrength = damage * 0.2f;
+
+        // コルーチンに強さを渡す
+        StartCoroutine(KnockbackRoutine(knockbackStrength));
+    }
+
+    private IEnumerator KnockbackRoutine(float strength) // 引数を受け取る
+    {
+        float timer = 0.2f;
+
+        while (timer > 0)
+        {
+            // 引数で受け取った strength を使って移動
+            transform.position -= transform.forward * Time.deltaTime * strength;
+
+            timer -= Time.deltaTime;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(0.3f);
+        if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = false;
+    }
+
+    public void OnDeath()
+    {
+        if (_isDead) return;
+        _isDead = true;
+
+        _isAttacking = false;
+        StopAllCoroutines(); // 全ての動作（ノックバック等）を中断
+
+        if (_agent.isActiveAndEnabled && _agent.isOnNavMesh)
+        {
+            _agent.isStopped = true;
+        }
+        _agent.enabled = false;
+
+        // 2. 死亡アニメーション
+        _animator.SetTrigger("IsDead"); // もし死亡用アニメがあれば。なければGetHitのままでもOK
+
+        // 3. 派手な吹き飛びを開始
+        //StartCoroutine(BlowAwayRoutine());
+        Destroy(gameObject, 3.0f);
+    }
+
 }

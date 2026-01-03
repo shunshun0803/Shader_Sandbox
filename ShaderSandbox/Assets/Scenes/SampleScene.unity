@@ -599,6 +599,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8489c29363f1421083ee57cf273b0ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxHP: 100
 --- !u!136 &129533268
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1121,6 +1122,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8489c29363f1421083ee57cf273b0ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxHP: 10
 --- !u!54 &304321322
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3732,6 +3734,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8489c29363f1421083ee57cf273b0ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxHP: 100
 --- !u!54 &2059972879
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -174,6 +174,16 @@ public class PlayerLockOn : MonoBehaviour
             Unlock();
             return;
         }
+        var health = _currentTargetEnemy.GetComponent<EnemyHealth>();
+        if (health != null && health.IsDead)
+        {
+            FindTarget(); // 近くの新しい敵を探す（いなければ結果的にUnlockされる）
+            if (_currentTargetEnemy == null || _currentTargetEnemy.GetComponent<EnemyHealth>().IsDead)
+            {
+                Unlock(); // 新しい敵が見つからなかったら完全に解除
+            }
+            return;
+        }
 
         if (_currentCursorInstance != null)
         {

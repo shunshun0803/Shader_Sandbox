@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Cinemachine;
+using System.Collections.Generic;
 
 public class WeaponDamage : MonoBehaviour
 {
@@ -8,6 +9,10 @@ public class WeaponDamage : MonoBehaviour
     [SerializeField] private GameObject hitVfxPrefab; // ▼ 追加: エフェクトのプレハブ
 
     private CinemachineImpulseSource _impulseSource;
+    // private List<Collider> _alreadyHitColliders = new List<Collider>();
+
+    // 攻撃開始時にアニメーションイベント等から呼ぶ
+
 
     private void Start()
     {
@@ -35,10 +40,10 @@ public class WeaponDamage : MonoBehaviour
                 {
                     // 衝突位置を計算（相手のコライダーの、自分に一番近い場所）
                     Vector3 hitPos = other.ClosestPointOnBounds(transform.position);
-                    
+
                     // エフェクトを生成
                     GameObject vfx = Instantiate(hitVfxPrefab, hitPos, Quaternion.identity);
-                    
+
                     // 2秒後に消す（ゴミ掃除）
                     Destroy(vfx, 2.0f);
                 }
